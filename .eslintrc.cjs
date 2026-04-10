@@ -3,7 +3,7 @@
 module.exports = {
   root: true,
   extends: ['google'],
-  ignorePatterns: ['node_modules/', 'data/'],
+  ignorePatterns: ['node_modules/', 'data/', 'coverage/'],
   overrides: [
     {
       files: ['server.js', 'lib/**/*.js'],
@@ -20,6 +20,13 @@ module.exports = {
       env: { es2022: true, browser: true },
       rules: {
         'no-alert': 'off',
+      },
+    },
+    {
+      files: ['**/*.test.js'],
+      env: { es2022: true, node: true, jest: true },
+      rules: {
+        'require-jsdoc': 'off',
       },
     },
   ],
