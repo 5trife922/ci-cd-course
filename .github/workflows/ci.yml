@@ -25,7 +25,7 @@ jobs:
       - name: ESLint
         run: npm run lint
 
-  test:
+  test-unit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -40,5 +40,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Jest
-        run: npm test
+      - name: Jest (unit)
+        run: npm run test:unit
+
+  test-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Jest (integration)
+        run: npm run test:integration
