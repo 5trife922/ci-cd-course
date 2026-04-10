@@ -3,17 +3,12 @@ const input = document.getElementById('input');
 const list = document.getElementById('list');
 const empty = document.getElementById('empty');
 const subtitle = document.getElementById('subtitle');
+const confirmDialog = document.getElementById('confirmDialog');
+const confirmMessage = document.getElementById('confirmMessage');
 
-/** Ключ в localStorage при недоступном API. */
 const STORAGE_KEY = 'sqlite-todo-local-v1';
-
-/** true — список хранится только в браузере. */
 let useLocalStorage = false;
 
-/**
- * Базовый URL каталога текущей страницы (со слэшем на конце).
- * @return {string}
- */
 function appBase() {
   const path = window.location.pathname;
   if (path.endsWith('/')) {
@@ -26,101 +21,65 @@ function appBase() {
   return window.location.origin + path.slice(0, slash + 1);
 }
 
-/**
- * Абсолютный URL для fetch (/api/...), в т.ч. на GitHub Pages с подпутём.
- * @param {string} path Путь вида /api/todos.
- * @return {string}
- */
 function apiUrl(path) {
   const tail = path.startsWith('/') ? path.slice(1) : path;
   return new URL(tail, appBase()).href;
 }
 
-/**
- * Показать подпись про офлайн-режим.
- * @param {boolean} offline Сервер недоступен.
- */
 function setOfflineSubtitle(offline) {
-  if (!subtitle) {
-    return;
-  }
   subtitle.textContent = offline ?
     'Мой список задач (сервер недоступен — данные в браузере)' :
     'Мой список задач';
 }
 
 /**
- * @return {!Array<!Object>}
+ * Модальное подтверждение (нативный dialog).
+ * @param {string} message Текст под заголовком.
+ * @return {!Promise<boolean>}
  */
+function confirmModal(message) {
+  confirmMessage.textContent = message;
+  return new Promise((resolve) => {
+    function onClose() {
+      confirmDialog.removeEventListener('close', onClose);
+      resolve(confirmDialog.returnValue === 'yes');
+    }
+    confirmDialog.addEventListener('close', onClose);
+    confirmDialog.showModal();
+  });
+}
+
 function readTodosFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const arr = JSON.parse(raw);
-    if (!arr || !arr.length) {
-      return [];
-    }
-    const out = [];
-    for (let i = 0; i < arr.length; i += 1) {
-      out.push(arr[i]);
-    }
-    return out;
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
   } catch (e) {
     return [];
   }
 }
 
-/**
- * @param {!Array<!Object>} rows
- */
 function writeTodosToStorage(rows) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
 }
 
-/**
- * Сортировка как на сервере: новые сверху.
- * @param {!Array<!Object>} rows
- * @return {!Array<!Object>}
- */
 function sortTodosNewestFirst(rows) {
-  const copy = rows.slice();
-  copy.sort((a, b) => {
-    const ta = new Date(a.created_at).getTime();
-    const tb = new Date(b.created_at).getTime();
-    return tb - ta;
+  return rows.slice().sort((a, b) => {
+    return new Date(b.created_at) - new Date(a.created_at);
   });
-  return copy;
 }
 
-/**
- * @param {!Array<!Object>} rows
- * @return {number}
- */
 function nextLocalId(rows) {
-  let m = 0;
-  for (let i = 0; i < rows.length; i += 1) {
-    if (rows[i].id > m) {
-      m = rows[i].id;
-    }
+  return rows.reduce((m, r) => (r.id > m ? r.id : m), 0) + 1;
+}
+
+function parseBody(options) {
+  if (!options || !options.body) {
+    return {};
   }
-  return m + 1;
+  return JSON.parse(options.body);
 }
 
-/**
- * @return {string}
- */
-function nowCreatedAt() {
-  return new Date().toISOString();
-}
-
-/**
- * CRUD в localStorage с тем же контрактом, что API.
- * @param {string} path /api/todos или /api/todos/:id
- * @param {RequestInit=} options
- * @return {!Promise<*>}
- */
 async function requestLocal(path, options) {
   const method = (options && options.method) || 'GET';
   const rows = readTodosFromStorage();
@@ -130,7 +89,7 @@ async function requestLocal(path, options) {
   }
 
   if (method === 'POST' && path === '/api/todos') {
-    const body = options && options.body ? JSON.parse(options.body) : {};
+    const body = parseBody(options);
     const title = String(body.title || '').trim();
     if (!title) {
       throw new Error('Нужен непустой title');
@@ -139,31 +98,25 @@ async function requestLocal(path, options) {
       id: nextLocalId(rows),
       title,
       completed: 0,
-      created_at: nowCreatedAt(),
+      created_at: new Date().toISOString(),
     };
     rows.push(row);
     writeTodosToStorage(rows);
     return row;
   }
 
-  const m = path.match(/^\/api\/todos\/(\d+)$/);
-  if (!m) {
+  const match = path.match(/^\/api\/todos\/(\d+)$/);
+  if (!match) {
     throw new Error('Not found');
   }
-  const id = Number(m[1]);
+  const id = Number(match[1]);
+  const idx = rows.findIndex((r) => r.id === id);
+  if (idx === -1) {
+    throw new Error('Задача не найдена');
+  }
 
   if (method === 'PATCH') {
-    const body = options && options.body ? JSON.parse(options.body) : {};
-    let idx = -1;
-    for (let i = 0; i < rows.length; i += 1) {
-      if (rows[i].id === id) {
-        idx = i;
-        break;
-      }
-    }
-    if (idx === -1) {
-      throw new Error('Задача не найдена');
-    }
+    const body = parseBody(options);
     if (body.title !== undefined) {
       const t = String(body.title).trim();
       rows[idx].title = t || rows[idx].title;
@@ -176,38 +129,18 @@ async function requestLocal(path, options) {
   }
 
   if (method === 'DELETE') {
-    const next = [];
-    for (let i = 0; i < rows.length; i += 1) {
-      if (rows[i].id !== id) {
-        next.push(rows[i]);
-      }
-    }
-    if (next.length === rows.length) {
-      throw new Error('Задача не найдена');
-    }
-    writeTodosToStorage(next);
+    rows.splice(idx, 1);
+    writeTodosToStorage(rows);
     return null;
   }
 
   throw new Error('Unsupported');
 }
 
-/**
- * Запрос к JSON API или эмуляция через localStorage.
- * @param {string} path Относительный URL.
- * @param {RequestInit=} options Аргументы fetch.
- * @return {!Promise<*>}
- */
 async function api(path, options) {
   if (useLocalStorage) {
-    const method = (options && options.method) || 'GET';
-    const out = await requestLocal(path, options);
-    if (method === 'DELETE') {
-      return null;
-    }
-    return out;
+    return requestLocal(path, options);
   }
-
   const res = await fetch(apiUrl(path), {
     headers: {'Content-Type': 'application/json'},
     ...options,
@@ -224,11 +157,6 @@ async function api(path, options) {
   return data;
 }
 
-/**
- * Форматирует дату для подписи задачи.
- * @param {string} iso Строка времени из БД.
- * @return {string}
- */
 function formatDate(iso) {
   if (!iso) {
     return '';
@@ -245,19 +173,22 @@ function formatDate(iso) {
   });
 }
 
-/**
- * Показывает или скрывает подсказку «пусто».
- * @param {boolean} show Показать текст.
- */
 function setEmptyVisible(show) {
   empty.hidden = !show;
 }
 
-/**
- * Создаёт DOM-элемент строки задачи.
- * @param {!Object} todo Поля id, title, completed, created_at.
- * @return {!HTMLLIElement}
- */
+function applyTodos(todos) {
+  list.replaceChildren();
+  if (!todos.length) {
+    setEmptyVisible(true);
+    return;
+  }
+  setEmptyVisible(false);
+  for (let i = 0; i < todos.length; i += 1) {
+    list.appendChild(renderRow(todos[i]));
+  }
+}
+
 function renderRow(todo) {
   const li = document.createElement('li');
   li.className = 'item' + (todo.completed ? ' done' : '');
@@ -289,9 +220,11 @@ function renderRow(todo) {
   del.textContent = 'Удалить';
   del.title = 'Удалить задачу';
 
+  const todoPath = '/api/todos/' + todo.id;
+
   check.addEventListener('change', async () => {
     try {
-      const updated = await api(`/api/todos/${todo.id}`, {
+      const updated = await api(todoPath, {
         method: 'PATCH',
         body: JSON.stringify({completed: check.checked}),
       });
@@ -304,11 +237,14 @@ function renderRow(todo) {
   });
 
   del.addEventListener('click', async () => {
-    if (!window.confirm('Удалить эту задачу?')) {
+    const ok = await confirmModal(
+        'Задача будет удалена. Это действие нельзя отменить.',
+    );
+    if (!ok) {
       return;
     }
     try {
-      await api(`/api/todos/${todo.id}`, {method: 'DELETE'});
+      await api(todoPath, {method: 'DELETE'});
       li.remove();
       if (!list.children.length) {
         setEmptyVisible(true);
@@ -324,14 +260,7 @@ function renderRow(todo) {
   return li;
 }
 
-/**
- * Пробует GET /api/todos; при успехе — сервер, иначе localStorage.
- * @return {!Promise<void>}
- */
 async function load() {
-  list.replaceChildren();
-  let todos;
-
   try {
     const res = await fetch(apiUrl('/api/todos'), {
       headers: {'Accept': 'application/json'},
@@ -339,22 +268,13 @@ async function load() {
     if (!res.ok) {
       throw new Error('bad status');
     }
-    todos = await res.json();
     useLocalStorage = false;
     setOfflineSubtitle(false);
+    applyTodos(await res.json());
   } catch (e) {
     useLocalStorage = true;
     setOfflineSubtitle(true);
-    todos = sortTodosNewestFirst(readTodosFromStorage());
-  }
-
-  if (!todos.length) {
-    setEmptyVisible(true);
-    return;
-  }
-  setEmptyVisible(false);
-  for (let i = 0; i < todos.length; i += 1) {
-    list.appendChild(renderRow(todos[i]));
+    applyTodos(sortTodosNewestFirst(readTodosFromStorage()));
   }
 }
 

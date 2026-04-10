@@ -3,38 +3,59 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#07080d" />
     <title>Задачи</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
+    <div class="bg-grid" aria-hidden="true"></div>
+
     <main class="shell">
-      <header class="head">
-        <h1 class="title">Задачи</h1>
-        <p class="subtitle" id="subtitle">Мой список задач</p>
-      </header>
+      <div class="app-card">
+        <header class="head">
+          <p class="eyebrow">Планировщик</p>
+          <h1 class="title">Задачи</h1>
+          <p class="subtitle" id="subtitle">Мой список задач</p>
+        </header>
 
-      <form class="composer" id="form" autocomplete="off">
-        <input
-          class="input"
-          id="input"
-          name="title"
-          maxlength="500"
-          placeholder="Что сделать?"
-          required
-        />
-        <button class="btn btn-primary" type="submit">Добавить</button>
-      </form>
+        <form class="composer" id="form" autocomplete="off">
+          <div class="input-wrap">
+            <input
+              class="input"
+              id="input"
+              name="title"
+              maxlength="500"
+              placeholder="Добавить задачу…"
+              required
+              aria-label="Текст задачи"
+            />
+          </div>
+          <button class="btn btn-primary" type="submit">Добавить</button>
+        </form>
 
-      <p class="hint" id="empty" hidden>Пока пусто — добавьте первую задачу</p>
-      <ul class="list" id="list"></ul>
+        <p class="hint" id="empty" hidden>Пока пусто — добавьте первую задачу</p>
+        <ul class="list" id="list"></ul>
+      </div>
     </main>
+
+    <dialog class="modal-dlg" id="confirmDialog" aria-labelledby="confirmHeading">
+      <div class="modal-card">
+        <h2 class="modal-title" id="confirmHeading">Удалить задачу?</h2>
+        <p class="modal-body" id="confirmMessage"></p>
+        <form method="dialog" class="modal-actions">
+          <button type="submit" value="no" class="btn btn-ghost modal-btn">Отмена</button>
+          <button type="submit" value="yes" class="btn btn-danger modal-btn">Удалить</button>
+        </form>
+      </div>
+    </dialog>
+
     <script src="app.js"></script>
   </body>
 </html>

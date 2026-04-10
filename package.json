@@ -5,15 +5,12 @@
   "description": "Простой todo с SQLite и миграциями",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
     "dev": "node --watch server.js",
     "lint": "node ./node_modules/eslint/bin/eslint.js .",
-    "test": "npm run test:unit && npm run test:integration",
     "test:unit": "node ./node_modules/jest/bin/jest.js --testPathIgnorePatterns=test/integration",
     "test:integration": "node ./node_modules/jest/bin/jest.js test/integration",
     "test:e2e": "node ./node_modules/@playwright/test/cli.js test",
-    "test:e2e:ui": "node ./node_modules/@playwright/test/cli.js test --ui",
-    "test:watch": "node ./node_modules/jest/bin/jest.js --watch"
+    "test:e2e:ui": "node ./node_modules/@playwright/test/cli.js test --ui"
   },
   "engines": {
     "node": ">=18"

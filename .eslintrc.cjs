@@ -26,6 +26,7 @@ module.exports = {
       env: { es2022: true, browser: true },
       rules: {
         'no-alert': 'off',
+        'require-jsdoc': 'off',
       },
     },
     {

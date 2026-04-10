@@ -7,8 +7,6 @@ const PAUSE_BETWEEN_TESTS_MS = 400;
 
 test.describe('Todo UI', () => {
   test.beforeEach(async ({page}) => {
-    page.on('dialog', (dialog) => dialog.accept());
-
     await Promise.all([
       page.waitForResponse(
           (r) =>
@@ -22,6 +20,12 @@ test.describe('Todo UI', () => {
       if (n === 0) {
         break;
       }
+      await page.locator('#list li').first().getByRole('button', {
+        name: 'Удалить',
+      }).click({force: true});
+      const confirmBtn = page.locator('#confirmDialog').getByRole('button', {
+        name: 'Удалить',
+      });
       await Promise.all([
         page.waitForResponse(
             (r) =>
@@ -29,9 +33,7 @@ test.describe('Todo UI', () => {
               r.request().method() === 'DELETE' &&
               r.status() === 204,
         ),
-        page.locator('#list li').first().getByRole('button', {
-          name: 'Удалить',
-        }).click({force: true}),
+        confirmBtn.click(),
       ]);
     }
   });
@@ -47,7 +49,7 @@ test.describe('Todo UI', () => {
   });
 
   test('добавление задачи и отображение в списке', async ({page}) => {
-    await page.getByPlaceholder('Что сделать?').fill('E2E: купить молоко');
+    await page.getByPlaceholder('Добавить задачу…').fill('E2E: купить молоко');
     await page.getByRole('button', {name: 'Добавить'}).click();
     await expect(page.locator('#list li')).toHaveCount(1);
     await expect(page.locator('.item-text')).toHaveText('E2E: купить молоко');
@@ -58,7 +60,7 @@ test.describe('Todo UI', () => {
     await expect(page.locator('#list li')).toHaveCount(0);
     await expect(page.getByText('Пока пусто')).toBeVisible();
 
-    await page.getByPlaceholder('Что сделать?').fill('Сделать e2e');
+    await page.getByPlaceholder('Добавить задачу…').fill('Сделать e2e');
     await Promise.all([
       page.waitForResponse(
           (r) =>
@@ -88,7 +90,7 @@ test.describe('Todo UI', () => {
     await expect(page.locator('#list li')).toHaveCount(0);
     await expect(page.getByText('Пока пусто')).toBeVisible();
 
-    await page.getByPlaceholder('Что сделать?').fill('Удалить меня');
+    await page.getByPlaceholder('Добавить задачу…').fill('Удалить меня');
     await Promise.all([
       page.waitForResponse(
           (r) =>
@@ -102,6 +104,10 @@ test.describe('Todo UI', () => {
     await expect(page.locator('.item-text')).toHaveText('Удалить меня');
 
     const item = page.locator('#list li').first();
+    await item.getByRole('button', {name: 'Удалить'}).click({force: true});
+    const confirmDel = page.locator('#confirmDialog').getByRole('button', {
+      name: 'Удалить',
+    });
     await Promise.all([
       page.waitForResponse(
           (r) =>
@@ -109,7 +115,7 @@ test.describe('Todo UI', () => {
             r.request().method() === 'DELETE' &&
             r.status() === 204,
       ),
-      item.getByRole('button', {name: 'Удалить'}).click({force: true}),
+      confirmDel.click(),
     ]);
     await expect(page.locator('#list li')).toHaveCount(0);
     await expect(page.getByText('Пока пусто')).toBeVisible();
