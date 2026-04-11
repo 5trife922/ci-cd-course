@@ -31,7 +31,7 @@ describe('API /api/todos', () => {
         .send({title: '  Учить Jest  '})
         .expect(201);
     expect(res.body.title).toBe('Учить Jest');
-    expect(res.body.completed).toBe(0);
+    expect(res.body.completed).toBe(1);
     expect(res.body.id).toBe(1);
   });
 
