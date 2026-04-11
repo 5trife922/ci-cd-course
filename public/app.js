@@ -218,7 +218,7 @@ function renderRow(todo) {
   del.type = 'button';
   del.className = 'btn btn-ghost';
   del.textContent = 'Удалить';
-  del.title = 'Удалить задачу';
+  del.title = 'Удалить задачку';
 
   const todoPath = '/api/todos/' + todo.id;
 
