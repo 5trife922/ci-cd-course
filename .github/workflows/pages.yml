@@ -35,12 +35,12 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Результат — успех
+      - name: Результат — успех!
         if: success()
         run: |
           echo "::notice title=GitHub Pages::Публикация статики завершена успешно."
 
-      - name: Результат — ошибка
+      - name: Результат — ошибка!
         if: failure()
         run: |
           echo "::error title=GitHub Pages::Публикация не удалась. Смотрите логи шагов выше."
