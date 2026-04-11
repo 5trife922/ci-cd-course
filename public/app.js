@@ -36,17 +36,17 @@ function setOfflineSubtitle(offline) {
  * Модальное подтверждение (нативный dialog).
  * @param {string} message Текст под заголовком.
  * @return {!Promise<boolean>}
- */
+ */ 
 function confirmModal(message) {
   confirmMessage.textContent = message;
-  return new Promise((resolve) => {
+  return new Promise((resolve) => { 
     function onClose() {
       confirmDialog.removeEventListener('close', onClose);
-      resolve(confirmDialog.returnValue === 'yes');
+      resolve(confirmDialog.returnValue === 'yes')
     }
     confirmDialog.addEventListener('close', onClose);
     confirmDialog.showModal();
-  });
+  })
 }
 
 function readTodosFromStorage() {
