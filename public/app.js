@@ -41,7 +41,7 @@ function confirmModal(message) {
   confirmMessage.textContent = message;
   return new Promise((resolve) => {
     function onClose() {
-      confirmDialog.removeEventListener('close', onClose); 
+      confirmDialog.removeEventListener('close', onClose);
       resolve(confirmDialog.returnValue === 'yes');
     }
     confirmDialog.addEventListener('close', onClose);
