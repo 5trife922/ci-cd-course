@@ -40,3 +40,40 @@ jobs:
 
       - name: jest unit-tests
         run: npm run test:unit
+
+  integrations-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: node.js install
+        uses: actions/setup-node@v4
+        with:
+          node-version:
+      
+      - name: install dependencies
+        run: npm ci
+
+      - name: jest integration-tests
+        run: npm run test:integration
+
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: node.js install
+        uses: actions/setup-node@v4
+        with:
+          node-version:
+      
+      - name: install dependencies
+        run: npm ci
+
+      - name: install playwright
+        run: node ./node_modules/@playwright/test/cli.js install --with-deps chromium
+      
+      - name: e2e
+        run: npm run test:e2e
